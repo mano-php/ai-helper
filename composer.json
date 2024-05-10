@@ -1,5 +1,5 @@
 {
-    "name": "mano-php/ai-helper",
+    "name": "mano-code/ai-helper",
     "alias": "AI工具助手",
     "description": "AI工具助手，生成amis",
     "type": "library",
