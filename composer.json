@@ -1,0 +1,32 @@
+{
+    "name": "mano-php/ai-helper",
+    "alias": "AI工具助手",
+    "description": "AI工具助手，生成amis",
+    "type": "library",
+    "keywords": ["extension"],
+    "homepage": "https://github.com/hyperf-plus/ai-helper",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ManoCode",
+            "email": "ManoCode@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "slowlyo/owl-admin": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "ManoCode\\AIHelper\\": "src/"
+        }
+    },
+    "extra": {
+        "owl-admin": "ManoCode\\AIHelper\\AiHelperServiceProvider",
+        "laravel": {
+            "providers": [
+                "ManoCode\\AIHelper\\AiHelperServiceProvider"
+            ]
+        }
+    }
+}
