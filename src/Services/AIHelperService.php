@@ -137,7 +137,7 @@ class AIHelperService
                 'columns.*.action_scope' => 'required|array',
                 'columns.*.action_scope.*' => 'in:list,detail,create,edit',
                 'columns.*.file_column' => 'required|boolean',
-                'columns.*.form_component_type' => 'required|in:TextControl,DateTimeControl,SwitchControl,SelectControl,TextareaControl,InputCityControl,RatingControl,ImageControl',
+                'columns.*.form_component_type' => 'required|in:TextControl,DateTimeControl,SwitchControl,SelectControl,TextareaControl,InputCityControl,RatingControl,ImageControl,FileControl',
                 'columns.*.form_component_property' => 'nullable|array',
                 'columns.*.list_component_type' => 'nullable|in:TableColumn,ImageControl',
                 'columns.*.list_component_property' => 'nullable|array',

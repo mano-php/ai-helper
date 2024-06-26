@@ -3,7 +3,7 @@
     "alias": "AI工具助手",
     "description": "通过GPT生成代码模块",
     "type": "library",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "keywords": [
         "extension"
     ],
