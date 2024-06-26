@@ -1,10 +1,13 @@
 {
     "name": "mano-code/ai-helper",
     "alias": "AI工具助手",
-    "description": "AI工具助手，生成amis",
+    "description": "通过GPT生成代码模块",
     "type": "library",
-    "keywords": ["extension"],
-    "homepage": "https://github.com/hyperf-plus/ai-helper",
+    "version": "1.1.0",
+    "keywords": [
+        "extension"
+    ],
+    "homepage": "https://github.com/mano-php/ai-helper",
     "license": "MIT",
     "authors": [
         {

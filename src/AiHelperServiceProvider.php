@@ -21,10 +21,11 @@ class AiHelperServiceProvider extends ServiceProvider
 	public function settingForm()
 	{
 	    return $this->baseSettingForm()->body([
-            amis()->TextControl()->label('秘钥')->name('app_key')->editorState('default')->showCounter('')->validations([])->validationErrors([])->maxLength('32')->description('在api平台申请的aikey'),
+            amis()->TextControl()->label('请求地址')->name('app_url')->editorState('default')->showCounter('')->validations([])->validationErrors([])->description('openapi的地址'),
+            amis()->TextControl()->label('秘钥')->name('app_key')->editorState('default')->showCounter('')->validations([])->validationErrors([])->description('在api平台申请的aikey'),
             amis()->RadiosControl()->label('引擎类型')->name('engine_type')->options([
                 [
-                    'label' => 'GPT4',
+                    'label' => 'GPT4o',
                     'value' => '1',
                 ]
             ])->value('1'),

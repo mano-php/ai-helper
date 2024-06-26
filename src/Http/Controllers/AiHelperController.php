@@ -13,14 +13,19 @@ class AiHelperController extends AdminController
     public function index()
     {
         $page = $this->aiPage();
-
         return $this->response()->success($page);
     }
 
     public function gen()
     {
         $response = new StreamedResponse(function () {
-            app(AIHelperService::class)->request(request()->json('prompt'), request()->json('gen'));
+            $prompt = request()->json('prompt');
+            $gen = request()->json('gen');
+            $aiHelperService = app(AIHelperService::class);
+            $result = $aiHelperService->request($prompt, $gen);
+            echo $result;
+            @ob_flush();
+            flush();
         });
         // Set headers for streaming
         $response->headers->set('Content-Type', 'text/event-stream');
@@ -32,11 +37,24 @@ class AiHelperController extends AdminController
     public function import()
     {
         try {
-            $data = json_decode(request()->getContent(),true);
+            $jsonContent = request()->getContent();
+            $data = json_decode($jsonContent, true);
+
+            // 验证 JSON 数据是否解析正确
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('Invalid JSON data: ' . json_last_error_msg());
+            }
+
+            // 验证解析后的数据是否为数组
+            if (!is_array($data)) {
+                throw new \Exception('Decoded JSON data is not an array');
+            }
+
             app(AIHelperService::class)->create($data);
         } catch (\Throwable $e) {
             return Admin::response()->fail($e->getMessage());
         }
+
         return Admin::response()->successMessage('生成成功');
     }
     public function aiPage()
@@ -108,39 +126,49 @@ fetch(url,{
                                         'script' => 'const url = "' . admin_url('ai-helper/gen', true) . '"; // 后端服务URL
 const decoder = new TextDecoder(\'utf-8\');
 let textContent = "";
-fetch(url,{
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ' . request()->bearerToken() . '`
-  },
-  body: JSON.stringify({
-  prompt: event.data.ai_optimization,
-  gen:true
-})
-  }).then(response => {
+
+// 清空 gen_code 的值
+doAction({
+    actionType: \'setValue\',
+    componentId: "gen_code",
+    args:{
+        "value": ""
+    }
+});
+
+fetch(url, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ' . request()->bearerToken() . '`
+    },
+    body: JSON.stringify({
+        prompt: event.data.ai_optimization,
+        gen: true
+    })
+}).then(response => {
     const reader = response.body.getReader();
     return new ReadableStream({
-      async start(controller) {
-        while (true) {
-          const {done, value} = await reader.read();
-          if (done) {
-            controller.close();
-            break;
-          }
-          const chunkText = decoder.decode(value, {stream: true});
-          doAction({
-              actionType: \'setValue\',
-              componentId: "gen_code",
-              args:{
-                 "value":textContent +=chunkText
-              }
-          });
-          controller.enqueue(value);
+        async start(controller) {
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) {
+                    controller.close();
+                    break;
+                }
+                const chunkText = decoder.decode(value, {stream: true});
+                doAction({
+                    actionType: \'setValue\',
+                    componentId: "gen_code",
+                    args: {
+                        "value": textContent += chunkText
+                    }
+                });
+                controller.enqueue(value);
+            }
         }
-      }
     });
-  }).then(stream => new Response(stream))
+}).then(stream => new Response(stream))
     .catch(err => console.error(err));',
                                         'actionType' => 'custom',
                                     ],
