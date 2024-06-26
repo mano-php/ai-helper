@@ -4,11 +4,8 @@ namespace ManoCode\AIHelper\Services;
 
 use ManoCode\AIHelper\AiHelperServiceProvider;
 use Illuminate\Support\Facades\Validator;
-use Slowlyo\OwlAdmin\Admin;
 use Slowlyo\OwlAdmin\Services\AdminCodeGeneratorService;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
+
 
 class AIHelperService
 {
@@ -20,54 +17,65 @@ class AIHelperService
         return true;
     }
 
-    public function request($prompt, $gen = true)
+    public function request($prompt, $generate = true)
     {
         // 设置最大执行时间为300秒
         set_time_limit(300);
-        $app_url = AiHelperServiceProvider::setting('app_url');
-        $app_key = AiHelperServiceProvider::setting('app_key');
 
-        admin_abort_if(empty($app_key), '秘钥不存在，请先在插件配置中设置！');
-        admin_abort_if(empty($app_url), '请求地址不存在，请先在插件配置中设置！');
-        $system = $gen
+        // 获取配置信息
+        $appUrl = AiHelperServiceProvider::setting('app_url');
+        $appKey = AiHelperServiceProvider::setting('app_key');
+
+        // 检查配置是否存在
+        admin_abort_if(empty($appKey), '秘钥不存在，请先在插件配置中设置！');
+        admin_abort_if(empty($appUrl), '请求地址不存在，请先在插件配置中设置！');
+
+        // 根据$generate参数决定使用哪个系统提示
+        $systemPrompt = $generate
             ? file_get_contents(base_path('vendor/mano-code/ai-helper/prompt.md'))
             : $this->getNonGenSystemPrompt();
+
+        // 构建请求消息
         $message = [
-            'model' => 'gpt-4',
+            'model' => 'gpt-4o',
             'messages' => [
-                ['role' => 'system', 'content' => $system],
+                ['role' => 'system', 'content' => $systemPrompt],
                 ['role' => 'user', 'content' => $prompt],
             ],
             'stream' => true
         ];
-        if ($gen) {
+
+        // 如果需要生成json_object格式的响应
+        if ($generate) {
             $message['response_format'] = ['type' => "json_object"];
         }
-        return response()->stream(function () use ($appUrl, $appKey, $message) {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $appKey
-            ])->withOptions([
-                'stream' => true
-            ])->post($appUrl . "/v1/chat/completions", $message);
 
-            foreach ($response->getBody() as $chunk) {
-                $messages = $this->parseEventStreamData($chunk);
-                foreach ($messages as $message) {
-                    foreach ($message['choices'] ?? [] as $choice) {
-                        $str = $choice['delta']['content'] ?? '';
-                        echo $str;
-                        ob_flush();
-                        flush();
-                    }
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $appUrl . "/v1/chat/completions");
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'Authorization: Bearer ' . $appKey));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($message));
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $output) {
+            $messages = self::parseEventStreamData($output);
+            foreach ($messages as $message) {
+                foreach ($message['choices'] ?? [] as $choice) {
+                    $str = $choice['delta']['content'] ?? '';
+                    echo $str;
+                    ob_flush();
+                    flush();
                 }
             }
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
-            'X-Accel-Buffering' => 'no'
-        ]);
+            return strlen($output);
+        });
+        curl_exec($ch);
+        curl_close($ch);
     }
+
+    /**
+     * 获取非生成系统提示
+     *
+     * @return string
+     */
     private function getNonGenSystemPrompt(): string
     {
         return "你以高级产品经理的角色为我生成需求详细内容，我给你一句话，你帮我设计产品的详细字段、类型等详细的需求拆解，
@@ -84,6 +92,30 @@ class AIHelperService
    - 描述：商家或店铺的标志，用于标识和品牌宣传";
     }
 
+    /**
+     * 解析事件流数据
+     *
+     * @param string $response
+     * @return array
+     */
+    private function parseEventStreamData(string $response): array
+    {
+        $data = [];
+        $lines = explode("\n", $response);
+
+        foreach ($lines as $line) {
+            if (!str_contains($line, ':')) {
+                continue;
+            }
+            [$name, $value] = explode(':', $line, 2);
+
+            if ($name === 'data') {
+                $data[] = json_decode(trim($value), true);
+            }
+        }
+
+        return $data;
+    }
 
     # 验证生成的格式是否合法
     private function check(array $data)
@@ -202,36 +234,5 @@ class AIHelperService
         }
         return $data;
     }
-//    private static function parseEventStreamData($data)
-//    {
-//        // 如果$data为空，返回一个空数组
-//        if (empty($data)) {
-//            return [];
-//        }
-//        // 解析事件流数据
-//        $messages = [];
-//        $lines = explode("\n", $data);
-//        foreach ($lines as $line) {
-//            $line = trim($line);
-//            if (!empty($line)) {
-//                $messages[] = json_decode($line, true);
-//            }
-//        }
-//        return $messages;
-//    }
-    private function parseEventStreamData($response): array
-    {
-        $data = [];
-        $lines = explode("\n", $response);
-        foreach ($lines as $line) {
-            if (!str_contains($line, ':')) {
-                continue;
-            }
-            [$name, $value] = explode(':', $line, 2);
-            if ($name == 'data') {
-                $data[] = json_decode(trim($value), true);
-            }
-        }
-        return $data;
-    }
+
 }

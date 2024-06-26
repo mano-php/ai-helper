@@ -22,10 +22,10 @@ class AiHelperServiceProvider extends ServiceProvider
 	{
 	    return $this->baseSettingForm()->body([
             amis()->TextControl()->label('请求地址')->name('app_url')->editorState('default')->showCounter('')->validations([])->validationErrors([])->description('openapi的地址'),
-            amis()->TextControl()->label('秘钥')->name('app_key')->editorState('default')->showCounter('')->validations([])->validationErrors([])->description('在api平台申请的aikey'),
+            amis()->TextControl()->label('秘钥')->name('app_key')->type('input-password')->editorState('default')->showCounter('')->validations([])->validationErrors([])->description('在api平台申请的aikey'),
             amis()->RadiosControl()->label('引擎类型')->name('engine_type')->options([
                 [
-                    'label' => 'GPT4o',
+                    'label' => 'GPT-4o',
                     'value' => '1',
                 ]
             ])->value('1'),
