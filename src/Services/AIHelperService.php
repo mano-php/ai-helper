@@ -55,6 +55,7 @@ class AIHelperService
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'Authorization: Bearer ' . $appKey));
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($message));
+        ob_start();
         curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $output) {
             $messages = self::parseEventStreamData($output);
             foreach ($messages as $message) {
